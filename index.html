@@ -1,0 +1,240 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Flappy Bird Clone con Firebase</title>
+<style>
+  body {
+    margin: 0;
+    background: #70c5ce;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: 100vh;
+    overflow: hidden;
+    font-family: sans-serif;
+    user-select: none;
+  }
+  canvas {
+    background: #70c5ce;
+    border: 2px solid #000;
+    display: block;
+  }
+  #score {
+    position: absolute;
+    top: 10px;
+    left: 50%;
+    transform: translateX(-50%);
+    color: white;
+    font-size: 24px;
+    font-weight: bold;
+    text-shadow: 1px 1px 2px #000;
+  }
+  #message {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    color: yellow;
+    font-size: 32px;
+    font-weight: bold;
+    display: none;
+    text-shadow: 2px 2px 4px #000;
+  }
+</style>
+</head>
+<body>
+<div id="score">0</div>
+<div id="message">Premi SPAZIO o clicca per iniziare!</div>
+<canvas width="400" height="600"></canvas>
+
+<!-- Firebase SDKs -->
+<script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-analytics-compat.js"></script>
+<script>
+ // Import the functions you need from the SDKs you need
+import { initializeApp } from "firebase/app";
+import { getAnalytics } from "firebase/analytics";
+// TODO: Add SDKs for Firebase products that you want to use
+// https://firebase.google.com/docs/web/setup#available-libraries
+
+// Your web app's Firebase configuration
+// For Firebase JS SDK v7.20.0 and later, measurementId is optional
+const firebaseConfig = {
+  apiKey: "AIzaSyA247qAaZbKYhTLCzElb0wMASSIdDozSoQ",
+  authDomain: "flappybird-95946.firebaseapp.com",
+  projectId: "flappybird-95946",
+  storageBucket: "flappybird-95946.firebasestorage.app",
+  messagingSenderId: "366782106503",
+  appId: "1:366782106503:web:80f64fd5221d15e52fe122",
+  measurementId: "G-SJBKPBBW7L"
+};
+
+// Initialize Firebase
+const app = initializeApp(firebaseConfig);
+const analytics = getAnalytics(app);
+  };
+
+  firebase.initializeApp(firebaseConfig);
+  firebase.analytics();
+
+  console.log("Firebase inizializzato");
+</script>
+
+<script>
+(() => {
+  const canvas = document.querySelector('canvas');
+  const ctx = canvas.getContext('2d');
+  const scoreEl = document.getElementById('score');
+  const messageEl = document.getElementById('message');
+
+  const WIDTH = canvas.width;
+  const HEIGHT = canvas.height;
+
+  let bird = {
+    x: 80,
+    y: HEIGHT / 2,
+    radius: 12,
+    gravity: 0.6,
+    lift: -10,
+    velocity: 0,
+  };
+
+  let pipes = [];
+  const PIPE_WIDTH = 50;
+  const PIPE_GAP = 140;
+  const PIPE_SPEED = 2;
+
+  let frameCount = 0;
+  let score = 0;
+  let gameOver = false;
+  let gameStarted = false;
+
+  function resetGame() {
+    bird.y = HEIGHT / 2;
+    bird.velocity = 0;
+    pipes = [];
+    frameCount = 0;
+    score = 0;
+    gameOver = false;
+    gameStarted = false;
+    scoreEl.textContent = score;
+    messageEl.textContent = "Premi SPAZIO o clicca per iniziare!";
+    messageEl.style.display = 'block';
+  }
+
+  function createPipe() {
+    let topHeight = Math.floor(Math.random() * (HEIGHT - PIPE_GAP - 100)) + 50;
+    pipes.push({
+      x: WIDTH,
+      top: topHeight,
+      bottom: topHeight + PIPE_GAP,
+      passed: false
+    });
+  }
+
+  function drawBird() {
+    ctx.fillStyle = 'yellow';
+    ctx.beginPath();
+    ctx.ellipse(bird.x, bird.y, bird.radius + 5, bird.radius, 0, 0, 2 * Math.PI);
+    ctx.fill();
+    ctx.strokeStyle = 'orange';
+    ctx.lineWidth = 3;
+    ctx.stroke();
+  }
+
+  function drawPipes() {
+    ctx.fillStyle = '#228B22';
+    pipes.forEach(pipe => {
+      ctx.fillRect(pipe.x, 0, PIPE_WIDTH, pipe.top);
+      ctx.fillRect(pipe.x, pipe.bottom, PIPE_WIDTH, HEIGHT - pipe.bottom);
+    });
+  }
+
+  function update() {
+    if (!gameStarted) return;
+
+    bird.velocity += bird.gravity;
+    bird.y += bird.velocity;
+
+    if (bird.y + bird.radius > HEIGHT) {
+      bird.y = HEIGHT - bird.radius;
+      gameOver = true;
+    }
+    if (bird.y - bird.radius < 0) {
+      bird.y = bird.radius;
+      bird.velocity = 0;
+    }
+
+    if (frameCount % 90 === 0) {
+      createPipe();
+    }
+
+    pipes.forEach(pipe => pipe.x -= PIPE_SPEED);
+    pipes = pipes.filter(pipe => pipe.x + PIPE_WIDTH > 0);
+
+    for (let pipe of pipes) {
+      if (
+        bird.x + bird.radius > pipe.x &&
+        bird.x - bird.radius < pipe.x + PIPE_WIDTH &&
+        (bird.y - bird.radius < pipe.top || bird.y + bird.radius > pipe.bottom)
+      ) {
+        gameOver = true;
+      }
+
+      if (!pipe.passed && pipe.x + PIPE_WIDTH < bird.x) {
+        pipe.passed = true;
+        score++;
+        scoreEl.textContent = score;
+      }
+    }
+
+    if (gameOver) {
+      messageEl.textContent = "Game Over! Premi SPAZIO o clicca per ricominciare.";
+      messageEl.style.display = 'block';
+      gameStarted = false;
+    }
+  }
+
+  function draw() {
+    ctx.clearRect(0, 0, WIDTH, HEIGHT);
+    drawBird();
+    drawPipes();
+  }
+
+  function loop() {
+    update();
+    draw();
+    frameCount++;
+    requestAnimationFrame(loop);
+  }
+
+  function flap() {
+    if (!gameStarted) {
+      resetGame();
+      gameStarted = true;
+      messageEl.style.display = 'none';
+    }
+    if (!gameOver) {
+      bird.velocity = bird.lift;
+    }
+  }
+
+  window.addEventListener('keydown', e => {
+    if (e.code === 'Space') {
+      e.preventDefault();
+      flap();
+    }
+  });
+
+  window.addEventListener('mousedown', e => {
+    flap();
+  });
+
+  resetGame();
+  loop();
+})();
+</script>
+</body>
+</html>
