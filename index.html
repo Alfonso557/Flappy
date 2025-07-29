@@ -65,13 +65,13 @@
     width: 34,
     height: 24,
     gravity: 0.2,
-    lift: -6,
+    lift: -5,
     velocity: 0,
   };
 
   let pipes = [];
   const PIPE_WIDTH = 50;
-  const PIPE_GAP = 140;
+  const PIPE_GAP = 160;
   const PIPE_SPEED = 2;
 
   let frameCount = 0;
@@ -169,7 +169,7 @@
     }
 
     if (gameOver) {
-      messageEl.textContent = "Game Over! Premi SPAZIO o clicca per ricominciare.";
+      messageEl.textContent = "Perdente 😄! Premi  per ricominciare.";
       messageEl.style.display = 'block';
       gameStarted = false;
     }
